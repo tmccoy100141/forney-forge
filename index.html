@@ -3,590 +3,1022 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Forney Product Content Rewriter</title>
+<title>Forney Forge — AI Content Engine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f4f3f0; color: #1a1a1a; min-height: 100vh; padding: 2rem; font-size: 15px; }
-  .container { max-width: 820px; margin: 0 auto; }
-  .header { margin-bottom: 2rem; }
-  .header h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
-  .header p { font-size: 14px; color: #666; }
-  .card { background: #fff; border: 1px solid #e5e3df; border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; }
-  .card-title { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #888; margin-bottom: 1rem; }
-  .field { margin-bottom: 14px; }
-  .field label { display: block; font-size: 13px; font-weight: 500; color: #444; margin-bottom: 5px; }
-  .field input[type="text"], .field input[type="password"], .field select, .field textarea {
-    width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 8px;
-    font-size: 14px; background: #fafafa; color: #1a1a1a; outline: none;
-    transition: border-color 0.15s;
-  }
-  .field input:focus, .field select:focus, .field textarea:focus { border-color: #1D9E75; background: #fff; }
-  .field textarea { resize: vertical; min-height: 72px; font-family: inherit; }
-  .field .hint { font-size: 12px; color: #999; margin-top: 4px; }
-  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 1rem; }
-  button { padding: 9px 20px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; transition: all 0.15s; }
-  .btn-primary { background: #1D9E75; color: #fff; }
-  .btn-primary:hover { background: #178a64; }
-  .btn-primary:disabled { background: #ccc; color: #999; cursor: not-allowed; }
-  .btn-secondary { background: transparent; color: #333; border: 1px solid #ddd; }
-  .btn-secondary:hover { background: #f5f5f5; }
-  .btn-secondary:disabled { opacity: 0.4; cursor: not-allowed; }
-  .btn-download { background: #0F4C81; color: #fff; }
-  .btn-download:hover { background: #0a3a63; }
-  .btn-download:disabled { background: #ccc; color: #999; cursor: not-allowed; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  /* Stats */
-  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 1rem; }
-  .stat { background: #f7f6f3; border-radius: 8px; padding: 12px 14px; }
-  .stat-val { font-size: 26px; font-weight: 600; }
-  .stat-lbl { font-size: 11px; color: #888; margin-top: 2px; font-weight: 500; }
-  .stat.green .stat-val { color: #0F6E56; }
-  .stat.amber .stat-val { color: #BA7517; }
-  .stat.red .stat-val { color: #A32D2D; }
+:root {
+  --black: #0a0a0a;
+  --green: #8DC63F;
+  --green-dark: #6a9a2a;
+  --white: #ffffff;
+  --gray-50: #f8f8f6;
+  --gray-100: #f0efec;
+  --gray-200: #e2e0db;
+  --gray-400: #9a9690;
+  --gray-600: #5a5650;
+  --gray-800: #2a2620;
+  --red: #D4351C;
+}
 
-  /* Progress */
-  .progress-wrap { height: 8px; background: #ede; border-radius: 999px; overflow: hidden; margin: 10px 0; }
-  .progress-fill { height: 100%; background: linear-gradient(90deg, #1D9E75, #5DCAA5); border-radius: 999px; transition: width 0.4s ease; }
+body {
+  font-family: 'Barlow', sans-serif;
+  background: var(--gray-50);
+  color: var(--gray-800);
+  min-height: 100vh;
+  font-size: 15px;
+  line-height: 1.5;
+}
 
-  /* Log */
-  .log { background: #1a1a1a; border-radius: 8px; padding: 12px 16px; font-size: 12px; font-family: 'SF Mono', 'Consolas', monospace; color: #aaa; max-height: 200px; overflow-y: auto; margin-top: 10px; }
-  .log-line { margin-bottom: 3px; line-height: 1.6; }
-  .log-ok { color: #5DCAA5; }
-  .log-err { color: #f09595; }
-  .log-info { color: #888; }
-  .log-warn { color: #EF9F27; }
+/* ── HEADER ─────────────────────────── */
+.header {
+  background: var(--black);
+  padding: 0 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 72px;
+  border-bottom: 3px solid var(--green);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.header-logo { height: 36px; }
+.header-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--white);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.header-title span { color: var(--green); }
+.header-badge {
+  background: var(--green);
+  color: var(--black);
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 4px 12px;
+  border-radius: 3px;
+}
 
-  /* Upload zone */
-  .upload-zone { border: 2px dashed #ccc; border-radius: 10px; padding: 2.5rem; text-align: center; cursor: pointer; transition: all 0.2s; }
-  .upload-zone:hover, .upload-zone.over { border-color: #1D9E75; background: #f0faf6; }
-  .upload-zone.loaded { border-color: #1D9E75; border-style: solid; background: #f0faf6; }
-  .upload-icon { font-size: 36px; margin-bottom: 8px; }
-  .upload-text { font-size: 14px; color: #666; }
-  .upload-text strong { color: #333; }
-  input[type="file"] { display: none; }
+/* ── LAYOUT ─────────────────────────── */
+.main { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
 
-  /* Steps */
-  .steps { display: flex; align-items: center; gap: 8px; margin-bottom: 1.5rem; flex-wrap: wrap; }
-  .step { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #bbb; }
-  .step.active { color: #1a1a1a; font-weight: 600; }
-  .step.done { color: #1D9E75; }
-  .step-num { width: 22px; height: 22px; border-radius: 50%; border: 2px solid currentColor; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
-  .step.done .step-num::after { content: '✓'; }
-  .step-sep { width: 28px; height: 1px; background: #ddd; }
-  .step-label { display: none; }
-  @media(min-width: 500px) { .step-label { display: inline; } }
+/* ── STEPS NAV ──────────────────────── */
+.steps-nav {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-bottom: 2rem;
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.step-tab {
+  flex: 1;
+  padding: 12px 8px;
+  text-align: center;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--gray-400);
+  border-right: 1px solid var(--gray-200);
+  position: relative;
+  transition: all 0.2s;
+}
+.step-tab:last-child { border-right: none; }
+.step-tab.active {
+  background: var(--black);
+  color: var(--green);
+}
+.step-tab.done {
+  color: var(--green-dark);
+  background: #f0f8e8;
+}
+.step-tab .step-num {
+  display: block;
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 2px;
+}
 
-  /* Preview table */
-  .table-wrap { overflow-x: auto; border: 1px solid #e5e3df; border-radius: 8px; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th { background: #f7f6f3; padding: 8px 12px; text-align: left; font-weight: 600; color: #666; border-bottom: 1px solid #e5e3df; white-space: nowrap; }
-  td { padding: 8px 12px; border-bottom: 1px solid #f0efec; vertical-align: top; line-height: 1.5; }
-  td.new { color: #0F6E56; }
-  tr:last-child td { border-bottom: none; }
+/* ── CARDS ──────────────────────────── */
+.card {
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: 8px;
+  padding: 1.75rem;
+  margin-bottom: 1.25rem;
+  position: relative;
+}
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--gray-100);
+}
+.card-step-badge {
+  background: var(--black);
+  color: var(--green);
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.card-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--black);
+}
+.card-desc {
+  font-size: 13px;
+  color: var(--gray-600);
+  margin-bottom: 1.25rem;
+  line-height: 1.6;
+}
 
-  .status-bar { font-size: 13px; color: #666; margin-bottom: 6px; }
-  .hidden { display: none !important; }
-  .api-key-row { display: flex; gap: 8px; }
-  .api-key-row input { flex: 1; }
-  .tag { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 6px; font-weight: 600; vertical-align: middle; }
-  .tag-green { background: #d1fae5; color: #064e3b; }
-  .tag-red { background: #fee2e2; color: #7f1d1d; }
+/* ── FORM ELEMENTS ──────────────────── */
+.field { margin-bottom: 1rem; }
+.field-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gray-600);
+  margin-bottom: 6px;
+}
+.field-label .req { color: var(--red); }
+input[type=text], input[type=password], select, textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid var(--gray-200);
+  border-radius: 6px;
+  background: var(--gray-50);
+  color: var(--gray-800);
+  font-size: 14px;
+  font-family: 'Barlow', sans-serif;
+  transition: border-color 0.15s;
+  -webkit-appearance: none;
+}
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--green);
+  background: var(--white);
+}
+textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.hint {
+  font-size: 12px;
+  color: var(--gray-400);
+  margin-top: 5px;
+}
+.hint a { color: var(--green-dark); text-decoration: none; }
+.hint a:hover { text-decoration: underline; }
+
+/* ── BUTTONS ────────────────────────── */
+.btn-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 1.25rem; }
+.btn {
+  padding: 10px 24px;
+  border-radius: 6px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-primary {
+  background: var(--green);
+  color: var(--black);
+  border-color: var(--green);
+}
+.btn-primary:hover { background: var(--green-dark); border-color: var(--green-dark); }
+.btn-primary:disabled { background: var(--gray-200); color: var(--gray-400); border-color: var(--gray-200); cursor: not-allowed; }
+.btn-secondary {
+  background: transparent;
+  color: var(--gray-800);
+  border-color: var(--gray-200);
+}
+.btn-secondary:hover { background: var(--gray-100); }
+.btn-secondary:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-download {
+  background: var(--black);
+  color: var(--green);
+  border-color: var(--black);
+}
+.btn-download:hover { background: var(--gray-800); }
+.btn-download:disabled { background: var(--gray-200); color: var(--gray-400); border-color: var(--gray-200); cursor: not-allowed; }
+.btn-danger {
+  background: transparent;
+  color: var(--red);
+  border-color: var(--red);
+}
+
+/* ── UPLOAD ZONE ────────────────────── */
+.upload-zone {
+  border: 2px dashed var(--gray-200);
+  border-radius: 8px;
+  padding: 3rem 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: var(--gray-50);
+}
+.upload-zone:hover, .upload-zone.over {
+  border-color: var(--green);
+  background: #f4f9ec;
+}
+.upload-zone.loaded {
+  border-color: var(--green);
+  border-style: solid;
+  background: #f4f9ec;
+}
+.upload-icon {
+  font-size: 3rem;
+  margin-bottom: 12px;
+  line-height: 1;
+}
+.upload-text { font-size: 15px; color: var(--gray-600); }
+.upload-text strong { color: var(--gray-800); }
+
+/* ── STATS ──────────────────────────── */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 1rem;
+}
+.stat {
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: 6px;
+  padding: 14px 16px;
+}
+.stat-val {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--gray-800);
+}
+.stat-lbl {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gray-400);
+  margin-top: 4px;
+}
+.stat.g .stat-val { color: var(--green-dark); }
+.stat.a .stat-val { color: #BA7517; }
+.stat.r .stat-val { color: var(--red); }
+
+/* ── PROGRESS ───────────────────────── */
+.prog-wrap {
+  height: 8px;
+  background: var(--gray-100);
+  border-radius: 999px;
+  overflow: hidden;
+  margin: 10px 0;
+}
+.prog-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--green-dark), var(--green));
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+.status-line {
+  font-size: 13px;
+  color: var(--gray-600);
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+/* ── LOG ─────────────────────────────── */
+.log {
+  background: var(--black);
+  border-radius: 6px;
+  padding: 14px 16px;
+  font-size: 12px;
+  font-family: 'Courier New', monospace;
+  color: #666;
+  max-height: 200px;
+  overflow-y: auto;
+  margin-top: 10px;
+}
+.log-ok { color: var(--green); }
+.log-err { color: #f09595; }
+.log-warn { color: #EF9F27; }
+.log-info { color: #888; }
+
+/* ── TAGS ───────────────────────────── */
+.tag {
+  display: inline-block;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 3px;
+}
+.tag-ok { background: #d4edbc; color: #2a5a0a; }
+.tag-err { background: #fde8e8; color: #7a1a1a; }
+
+/* ── CATEGORY RULES ─────────────────── */
+.cat-rule {
+  border: 1px solid var(--gray-200);
+  border-radius: 6px;
+  padding: 1rem;
+  margin-bottom: 10px;
+  background: var(--gray-50);
+}
+.cat-rule-header {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--black);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.cat-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+  flex-shrink: 0;
+}
+
+/* ── CHAR LIMITS ────────────────────── */
+.char-limits {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 10px;
+}
+.char-limit-item {
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+.char-limit-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gray-400);
+  margin-bottom: 4px;
+}
+.char-limit-inputs { display: flex; gap: 6px; align-items: center; }
+.char-limit-inputs input {
+  width: 70px;
+  padding: 6px 8px;
+  font-size: 13px;
+  text-align: center;
+}
+.char-limit-sep { font-size: 12px; color: var(--gray-400); }
+
+/* ── PREVIEW TABLE ──────────────────── */
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--gray-200);
+  border-radius: 6px;
+}
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th {
+  background: var(--black);
+  color: var(--green);
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 10px 14px;
+  text-align: left;
+  white-space: nowrap;
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--gray-100);
+  vertical-align: top;
+  line-height: 1.5;
+}
+td.new { color: var(--green-dark); font-weight: 500; }
+tr:last-child td { border-bottom: none; }
+
+.hidden { display: none !important; }
+
+/* ── FOOTER ─────────────────────────── */
+.footer {
+  text-align: center;
+  padding: 2rem;
+  font-size: 12px;
+  color: var(--gray-400);
+  border-top: 1px solid var(--gray-200);
+  margin-top: 2rem;
+  font-family: 'Barlow Condensed', sans-serif;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* ── SECTION DIVIDER ────────────────── */
+.section-label {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--gray-400);
+  margin: 1.25rem 0 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--gray-200);
+}
+
+/* ── RETAILER PRESETS ───────────────── */
+.retailer-presets {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.retailer-btn {
+  padding: 6px 14px;
+  border: 1.5px solid var(--gray-200);
+  border-radius: 5px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+  background: var(--white);
+  color: var(--gray-600);
+  transition: all 0.15s;
+}
+.retailer-btn:hover, .retailer-btn.active {
+  border-color: var(--green);
+  background: #f4f9ec;
+  color: var(--green-dark);
+}
 </style>
 </head>
 <body>
-<div class="container">
-  <div class="header">
-    <h1>🔧 Forney Product Content Rewriter</h1>
-    <p>Batch-rewrite product names &amp; descriptions for AI discoverability — runs entirely in your browser.</p>
+
+<!-- HEADER -->
+<header class="header">
+  <img src="data:image/png;base64,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" alt="Forney" class="header-logo">
+  <div class="header-title">FORNEY <span>FORGE</span></div>
+  <div class="header-badge">AI Content Engine</div>
+</header>
+
+<main class="main">
+
+  <!-- Steps Nav -->
+  <div class="steps-nav" id="steps-nav">
+    <div class="step-tab active" id="s1"><span class="step-num">01</span>Upload</div>
+    <div class="step-tab" id="s2"><span class="step-num">02</span>Columns</div>
+    <div class="step-tab" id="s3"><span class="step-num">03</span>Configure</div>
+    <div class="step-tab" id="s4"><span class="step-num">04</span>Run</div>
   </div>
 
-  <div class="steps" id="steps">
-    <div class="step active" id="s1"><div class="step-num">1</div><span class="step-label">API Key</span></div>
-    <div class="step-sep"></div>
-    <div class="step" id="s2"><div class="step-num">2</div><span class="step-label">Upload</span></div>
-    <div class="step-sep"></div>
-    <div class="step" id="s3"><div class="step-num">3</div><span class="step-label">Map columns</span></div>
-    <div class="step-sep"></div>
-    <div class="step" id="s4"><div class="step-num">4</div><span class="step-label">Configure</span></div>
-    <div class="step-sep"></div>
-    <div class="step" id="s5"><div class="step-num">5</div><span class="step-label">Run &amp; download</span></div>
-  </div>
-
-  <!-- Step 1: API Key -->
-  <div class="card" id="panel-key">
-    <div class="card-title">Step 1 — Your Anthropic API Key</div>
-    <p style="font-size:13px; color:#666; margin-bottom:14px;">Your key is used only to call the Anthropic API directly from your browser. It is never stored or sent anywhere else.</p>
-    <div class="field">
-      <label>API Key <span style="color:#c00">*</span></label>
-      <div class="api-key-row">
-        <input type="password" id="api-key" placeholder="sk-ant-api03-..." autocomplete="off">
-        <button class="btn-primary" onclick="validateKey()">Validate →</button>
-      </div>
-      <div class="hint">Get your key at <a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com</a></div>
+  <!-- STEP 1: Upload -->
+  <div class="card" id="p1">
+    <div class="card-header">
+      <div class="card-step-badge">Step 01</div>
+      <div class="card-title">Upload Product File</div>
     </div>
-    <div id="key-status" style="font-size:13px; margin-top:6px;"></div>
-  </div>
-
-  <!-- Step 2: Upload -->
-  <div class="card hidden" id="panel-upload">
-    <div class="card-title">Step 2 — Upload your Excel file</div>
-    <div class="upload-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+    <p class="card-desc">Upload your Excel file containing product data. Forney Forge will automatically detect your columns and prepare them for AI rewriting.</p>
+    <div class="upload-zone" id="drop" onclick="document.getElementById('fi').click()">
       <div class="upload-icon">📊</div>
-      <div class="upload-text"><strong>Click to upload</strong> or drag and drop your .xlsx file</div>
-      <div class="upload-text" style="margin-top:4px; font-size:12px; color:#aaa;">Supports up to 5,000+ rows</div>
+      <div class="upload-text"><strong>Click to upload</strong> or drag and drop your .xlsx file here</div>
+      <div class="upload-text" style="margin-top:6px; font-size:13px; color:#9a9690;">Supports Excel files up to 5,000+ rows</div>
     </div>
-    <input type="file" id="file-input" accept=".xlsx,.xls">
-    <div id="file-status" class="hint hidden" style="margin-top:10px;"></div>
+    <input type="file" id="fi" accept=".xlsx,.xls" style="display:none;">
+    <div id="file-msg" class="hint hidden" style="margin-top:10px; font-size:14px;"></div>
   </div>
 
-  <!-- Step 3: Map Columns -->
-  <div class="card hidden" id="panel-map">
-    <div class="card-title">Step 3 — Map your columns</div>
-    <p style="font-size:13px; color:#666; margin-bottom:14px;">We auto-detected your columns below — confirm or adjust before continuing.</p>
+  <!-- STEP 2: Map Columns -->
+  <div class="card hidden" id="p2">
+    <div class="card-header">
+      <div class="card-step-badge">Step 02</div>
+      <div class="card-title">Map Your Columns</div>
+    </div>
+    <p class="card-desc">Confirm which columns contain your product data. Forney Forge auto-detects common column names — adjust if needed.</p>
     <div class="grid2">
       <div class="field">
-        <label>SKU / Item number</label>
-        <select id="col-sku"><option value="">— not mapped —</option></select>
+        <label class="field-label">SKU / Item Number</label>
+        <select id="c-sku"><option value="">— not mapped —</option></select>
       </div>
       <div class="field">
-        <label>Product name <span style="color:#c00">*</span></label>
-        <select id="col-name"><option value="">— select column —</option></select>
+        <label class="field-label">Product Name <span class="req">*</span></label>
+        <select id="c-name"><option value="">— select column —</option></select>
       </div>
       <div class="field">
-        <label>Short description</label>
-        <select id="col-short"><option value="">— not mapped —</option></select>
+        <label class="field-label">Short Description</label>
+        <select id="c-short"><option value="">— not mapped —</option></select>
       </div>
       <div class="field">
-        <label>Long description</label>
-        <select id="col-long"><option value="">— not mapped —</option></select>
+        <label class="field-label">Long Description</label>
+        <select id="c-long"><option value="">— not mapped —</option></select>
       </div>
     </div>
     <div class="field">
-      <label>Category / product type (helps Claude write better)</label>
-      <select id="col-cat"><option value="">— not mapped —</option></select>
+      <label class="field-label">Category / Product Type <span style="font-weight:400; text-transform:none; letter-spacing:0;">(helps Claude write better)</span></label>
+      <select id="c-cat"><option value="">— not mapped —</option></select>
     </div>
     <div class="btn-row">
-      <button class="btn-primary" onclick="goToStep4()">Confirm mapping →</button>
+      <button class="btn btn-primary" onclick="goStep3()">Confirm Mapping →</button>
     </div>
   </div>
 
-  <!-- Step 4: Configure -->
-  <div class="card hidden" id="panel-config">
-    <div class="card-title">Step 4 — Configure rewrite settings</div>
+  <!-- STEP 3: Configure -->
+  <div class="card hidden" id="p3">
+    <div class="card-header">
+      <div class="card-step-badge">Step 03</div>
+      <div class="card-title">Configure Rewrite Rules</div>
+    </div>
+
+    <!-- Retailer Presets -->
+    <div class="section-label">Retailer Preset</div>
+    <p class="card-desc" style="margin-top:-4px;">Select a retailer to auto-apply their content standards, or customize manually below.</p>
+    <div class="retailer-presets">
+      <button class="retailer-btn" onclick="applyPreset('homedepot', this)">The Home Depot</button>
+      <button class="retailer-btn" onclick="applyPreset('lowes', this)">Lowe's</button>
+      <button class="retailer-btn" onclick="applyPreset('zoro', this)">Zoro</button>
+      <button class="retailer-btn" onclick="applyPreset('amazon', this)">Amazon</button>
+      <button class="retailer-btn" onclick="applyPreset('custom', this)">Custom</button>
+    </div>
+
+    <!-- Character Limits -->
+    <div class="section-label">Character Limits</div>
+    <div class="char-limits">
+      <div class="char-limit-item">
+        <div class="char-limit-label">Product Name</div>
+        <div class="char-limit-inputs">
+          <input type="text" id="lim-name-min" value="40" placeholder="Min">
+          <span class="char-limit-sep">–</span>
+          <input type="text" id="lim-name-max" value="100" placeholder="Max">
+          <span class="char-limit-sep">chars</span>
+        </div>
+      </div>
+      <div class="char-limit-item">
+        <div class="char-limit-label">Short Description</div>
+        <div class="char-limit-inputs">
+          <input type="text" id="lim-short-min" value="100" placeholder="Min">
+          <span class="char-limit-sep">–</span>
+          <input type="text" id="lim-short-max" value="250" placeholder="Max">
+          <span class="char-limit-sep">chars</span>
+        </div>
+      </div>
+      <div class="char-limit-item">
+        <div class="char-limit-label">Long Description</div>
+        <div class="char-limit-inputs">
+          <input type="text" id="lim-long-min" value="300" placeholder="Min">
+          <span class="char-limit-sep">–</span>
+          <input type="text" id="lim-long-max" value="700" placeholder="Max">
+          <span class="char-limit-sep">chars</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category Rules -->
+    <div class="section-label">Category-Specific Rules</div>
+    <p style="font-size:13px; color:var(--gray-600); margin-bottom:12px;">Define required fields and tone for each product category. These override the global instructions below.</p>
+
+    <div id="cat-rules-container">
+      <div class="cat-rule" id="cat-electrodes">
+        <div class="cat-rule-header"><div class="cat-dot"></div>Electrodes &amp; Welding Rods</div>
+        <textarea id="rule-electrodes" rows="3">Always include: amperage range (min-max), electrode diameter, AWS classification (e.g. E6013, E7018), base metal compatibility, and coating type. Lead with the process type (Stick/SMAW). Example required field format: "Operates at [X]-[Y] amps, [Z]-inch diameter, AWS [classification]."</textarea>
+      </div>
+      <div class="cat-rule" id="cat-wire">
+        <div class="cat-rule-header"><div class="cat-dot"></div>Welding Wire &amp; MIG Wire</div>
+        <textarea id="rule-wire" rows="3">Always include: wire diameter, spool weight (lb), AWS classification (e.g. ER70S-6), shielding gas requirements, and compatible base metals. Lead with the process type (MIG/GMAW or Flux-Core/FCAW). Specify if gas-shielded or gasless.</textarea>
+      </div>
+      <div class="cat-rule" id="cat-abrasives">
+        <div class="cat-rule-header"><div class="cat-dot"></div>Abrasives, Wire Wheels &amp; Brushes</div>
+        <textarea id="rule-abrasives" rows="3">Always include: wire type (carbon steel, stainless steel, brass), wire diameter/gauge, arbor size, RPM rating, and compatible tool type (angle grinder, bench grinder, drill). Specify face width for cup brushes or diameter for wheel brushes.</textarea>
+      </div>
+      <div class="cat-rule" id="cat-equipment">
+        <div class="cat-rule-header"><div class="cat-dot"></div>Welding Equipment &amp; Machines</div>
+        <textarea id="rule-equipment" rows="3">Always include: input voltage (120V/240V), amperage output range, duty cycle, compatible processes (MIG, TIG, Stick, Flux-Core), and weight. Specify if multi-process. Include wire feed speed range for MIG machines.</textarea>
+      </div>
+      <div class="cat-rule" id="cat-accessories">
+        <div class="cat-rule-header"><div class="cat-dot"></div>Accessories &amp; Consumables</div>
+        <textarea id="rule-accessories" rows="3">Always include: compatible machine/process, material, dimensions, and pack quantity if applicable. Specify compatibility clearly (e.g. "fits Forney 140 MP and other MIG welders with standard Euro-connect torch").</textarea>
+      </div>
+    </div>
+
+    <!-- Global Settings -->
+    <div class="section-label">Global Settings</div>
     <div class="grid2">
       <div class="field">
-        <label>Batch size (rows per API call)</label>
-        <select id="batch-size">
-          <option value="5">5 rows — slower, more reliable</option>
-          <option value="10" selected>10 rows — recommended</option>
-          <option value="20">20 rows — faster</option>
+        <label class="field-label">Batch Size</label>
+        <select id="batch-sz">
+          <option value="5" selected>5 rows — most reliable</option>
+          <option value="10">10 rows — faster</option>
         </select>
-        <div class="hint">Stick with 10 for 1,800+ rows.</div>
+        <div class="hint">5 rows recommended for full rewrites.</div>
       </div>
       <div class="field">
-        <label>Rewrite scope</label>
-        <select id="rewrite-scope">
-          <option value="all">Name + Short desc + Long desc</option>
-          <option value="name-short">Name + Short desc only</option>
-          <option value="name-only">Product name only</option>
+        <label class="field-label">Rewrite Scope</label>
+        <select id="scope">
+          <option value="all">Name + Short + Long Description</option>
+          <option value="name-short">Name + Short Description only</option>
+          <option value="name-only">Product Name only</option>
         </select>
       </div>
     </div>
     <div class="field">
-      <label>Brand / company context</label>
-      <input type="text" id="brand-context" value="Forney Industries — welding products including electrodes, wire, rods, equipment, and accessories">
+      <label class="field-label">Additional Global Instructions</label>
+      <textarea id="custom" placeholder="Any additional rules that apply to all products regardless of category...">Write in plain, technical English. Avoid marketing fluff and superlatives. Every description must be usable by an AI shopping assistant to accurately match this product to a customer query. Do not invent specifications not present in the source data.</textarea>
     </div>
-    <div class="field">
-      <label>Custom rewrite instructions (optional)</label>
-      <textarea id="custom-prompt" placeholder="e.g. Always include material type, amperage range, and compatible welding processes. Use plain, technical language. Avoid marketing fluff."></textarea>
-    </div>
+
     <div class="btn-row">
-      <button class="btn-primary" onclick="goToStep5()">Proceed to run →</button>
-      <button class="btn-secondary" onclick="runPreview()">Preview 3 rows first</button>
+      <button class="btn btn-primary" onclick="goStep4()">Proceed to Run →</button>
+      <button class="btn btn-secondary" onclick="runPreview()">Preview 3 Rows First</button>
     </div>
   </div>
 
-  <!-- Preview -->
-  <div class="card hidden" id="panel-preview">
-    <div class="card-title">Preview — sample rewrites (3 rows)</div>
+  <!-- Preview Panel -->
+  <div class="card hidden" id="p-preview">
+    <div class="card-header">
+      <div class="card-step-badge">Preview</div>
+      <div class="card-title">Sample Rewrites — 3 Rows</div>
+    </div>
     <div class="table-wrap">
       <table>
-        <thead>
-          <tr><th>SKU</th><th>Original name</th><th>Rewritten name</th><th>Rewritten short desc</th></tr>
-        </thead>
-        <tbody id="preview-body">
-          <tr><td colspan="4" style="color:#999; padding:20px;">Loading preview...</td></tr>
-        </tbody>
+        <thead><tr><th>SKU</th><th>Original Name</th><th>Rewritten Name</th><th>Rewritten Short Desc.</th></tr></thead>
+        <tbody id="preview-body"><tr><td colspan="4" style="color:#9a9690; padding:20px;">Running preview...</td></tr></tbody>
       </table>
     </div>
     <div class="btn-row">
-      <button class="btn-primary" onclick="goToStep5()">Looks good — run all rows →</button>
-      <button class="btn-secondary" onclick="document.getElementById('panel-preview').classList.add('hidden')">Close preview</button>
+      <button class="btn btn-primary" onclick="goStep4()">Looks Good — Run All Rows →</button>
+      <button class="btn btn-secondary" onclick="document.getElementById('p-preview').classList.add('hidden')">Close Preview</button>
     </div>
   </div>
 
-  <!-- Step 5: Run -->
-  <div class="card hidden" id="panel-run">
-    <div class="card-title">Step 5 — Processing</div>
-    <div class="stats">
-      <div class="stat"><div class="stat-val" id="stat-total">0</div><div class="stat-lbl">Total rows</div></div>
-      <div class="stat green"><div class="stat-val" id="stat-done">0</div><div class="stat-lbl">Done</div></div>
-      <div class="stat amber"><div class="stat-val" id="stat-skip">0</div><div class="stat-lbl">Skipped</div></div>
-      <div class="stat red"><div class="stat-val" id="stat-errors">0</div><div class="stat-lbl">Errors</div></div>
+  <!-- STEP 4: Run -->
+  <div class="card hidden" id="p4">
+    <div class="card-header">
+      <div class="card-step-badge">Step 04</div>
+      <div class="card-title">Processing</div>
     </div>
-    <div class="progress-wrap"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
-    <div class="status-bar" id="status-msg">Ready. Click Start to begin.</div>
+    <div class="stats">
+      <div class="stat"><div class="stat-val" id="st-total">0</div><div class="stat-lbl">Total Rows</div></div>
+      <div class="stat g"><div class="stat-val" id="st-done">0</div><div class="stat-lbl">Completed</div></div>
+      <div class="stat a"><div class="stat-val" id="st-running">—</div><div class="stat-lbl">In Progress</div></div>
+      <div class="stat r"><div class="stat-val" id="st-err">0</div><div class="stat-lbl">Errors</div></div>
+    </div>
+    <div class="prog-wrap"><div class="prog-fill" id="prog" style="width:0%"></div></div>
+    <div class="status-line" id="status-line">Ready — click Start Processing to begin.</div>
     <div class="log" id="log"></div>
     <div class="btn-row">
-      <button class="btn-primary" id="btn-start" onclick="startProcessing()">▶ Start processing</button>
-      <button class="btn-secondary" id="btn-pause" onclick="togglePause()" disabled>Pause</button>
-      <button class="btn-download" id="btn-download" onclick="downloadResult()" disabled>⬇ Download result (.xlsx)</button>
+      <button class="btn btn-primary" id="btn-start" onclick="startProcessing()">▶ Start Processing</button>
+      <button class="btn btn-secondary" id="btn-pause" onclick="togglePause()" disabled>⏸ Pause</button>
+      <button class="btn btn-download" id="btn-dl" onclick="downloadResult()" disabled>⬇ Download Result</button>
     </div>
-    <p style="font-size:12px; color:#aaa; margin-top:10px;">Tip: Keep this tab open while running. You can pause at any time and resume.</p>
+    <p class="hint" style="margin-top:10px;">Keep this tab active while processing. Use Pause to stop between batches.</p>
   </div>
 
-</div>
+</main>
+
+<div class="footer">Forney Forge — AI Content Engine &nbsp;·&nbsp; Powered by Claude AI &nbsp;·&nbsp; Forney Industries © 2026</div>
 
 <script>
-// ── State ─────────────────────────────────────────────────────────────────────
-let apiKey = '';
-let workbook = null, headers = [], rows = [], outputRows = [];
-let paused = false, running = false;
-let doneCount = 0, errorCount = 0, skipCount = 0;
+// ── CONFIG ─────────────────────────────────────────────────────────────────
+const API_KEY = 'FORNEY_API_KEY_PLACEHOLDER';
+const MODEL = 'claude-haiku-4-5-20251001';
 
-// ── Step helpers ──────────────────────────────────────────────────────────────
+// ── STATE ───────────────────────────────────────────────────────────────────
+let headers=[], rows=[], outputRows=[], paused=false, running=false, doneCount=0, errCount=0;
+
+// ── RETAILER PRESETS ────────────────────────────────────────────────────────
+const PRESETS = {
+  homedepot: { nameMin:40, nameMax:100, shortMin:100, shortMax:250, longMin:300, longMax:700 },
+  lowes:     { nameMin:40, nameMax:90,  shortMin:100, shortMax:200, longMin:250, longMax:600 },
+  zoro:      { nameMin:30, nameMax:120, shortMin:80,  shortMax:300, longMin:200, longMax:800 },
+  amazon:    { nameMin:50, nameMax:200, shortMin:150, shortMax:250, longMin:400, longMax:1000 },
+  custom:    { nameMin:40, nameMax:100, shortMin:100, shortMax:250, longMin:300, longMax:700 },
+};
+
+function applyPreset(key, btn) {
+  document.querySelectorAll('.retailer-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const p = PRESETS[key];
+  document.getElementById('lim-name-min').value = p.nameMin;
+  document.getElementById('lim-name-max').value = p.nameMax;
+  document.getElementById('lim-short-min').value = p.shortMin;
+  document.getElementById('lim-short-max').value = p.shortMax;
+  document.getElementById('lim-long-min').value = p.longMin;
+  document.getElementById('lim-long-max').value = p.longMax;
+}
+
+// ── STEP NAVIGATION ─────────────────────────────────────────────────────────
 function setStep(n) {
-  for (let i = 1; i <= 5; i++) {
-    const el = document.getElementById('s' + i);
-    el.className = 'step' + (i < n ? ' done' : i === n ? ' active' : '');
-    if (i < n) el.querySelector('.step-num').textContent = '✓';
-    else el.querySelector('.step-num').textContent = String(i);
+  for(let i=1;i<=4;i++) {
+    const el=document.getElementById('s'+i);
+    el.className='step-tab'+(i<n?' done':i===n?' active':'');
   }
 }
-
-function showPanel(id) {
+function show(id) {
   document.getElementById(id).classList.remove('hidden');
-  setTimeout(() => document.getElementById(id).scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
+  setTimeout(()=>document.getElementById(id).scrollIntoView({behavior:'smooth',block:'nearest'}),80);
 }
 
-// ── Step 1: API Key ───────────────────────────────────────────────────────────
-async function validateKey() {
-  const key = document.getElementById('api-key').value.trim();
-  if (!key) {
-    document.getElementById('key-status').innerHTML = '<span class="tag tag-red">✗ Error</span> Please paste your API key first.';
-    return;
-  }
-  document.getElementById('key-status').textContent = 'Validating…';
-  try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 10, messages: [{ role: 'user', content: 'hi' }] })
-    });
-    const data = await resp.json();
-    // Show the raw response so we can debug if something goes wrong
-    if (resp.ok) {
-      apiKey = key;
-      document.getElementById('key-status').innerHTML = '<span class="tag tag-green">✓ Valid</span> API key accepted.';
-      setStep(2);
-      showPanel('panel-upload');
-    } else {
-      const msg = data.error?.message || JSON.stringify(data);
-      document.getElementById('key-status').innerHTML = `<span class="tag tag-red">✗ ${resp.status}</span> ${msg}`;
-    }
-  } catch (e) {
-    document.getElementById('key-status').innerHTML = `<span class="tag tag-red">✗ Network error</span> ${e.message} — make sure you're opening this file in Chrome/Edge (not Safari or Firefox).`;
-  }
-}
-
-// ── Step 2: File upload ───────────────────────────────────────────────────────
-const dropZone = document.getElementById('drop-zone');
-const fileInput = document.getElementById('file-input');
-
-dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('over'); });
-dropZone.addEventListener('dragleave', () => dropZone.classList.remove('over'));
-dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('over'); handleFile(e.dataTransfer.files[0]); });
-fileInput.addEventListener('change', e => handleFile(e.target.files[0]));
+// ── FILE UPLOAD ──────────────────────────────────────────────────────────────
+const drop=document.getElementById('drop'), fi=document.getElementById('fi');
+drop.addEventListener('dragover',e=>{e.preventDefault();drop.classList.add('over');});
+drop.addEventListener('dragleave',()=>drop.classList.remove('over'));
+drop.addEventListener('drop',e=>{e.preventDefault();drop.classList.remove('over');handleFile(e.dataTransfer.files[0]);});
+fi.addEventListener('change',e=>handleFile(e.target.files[0]));
 
 function handleFile(file) {
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    workbook = XLSX.read(e.target.result, { type: 'binary' });
-    const sheetName = workbook.SheetNames[0];
-    const ws = workbook.Sheets[sheetName];
-    const data = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
-    headers = data[0].map(String);
-    rows = data.slice(1).filter(r => r.some(c => c !== ''));
-    outputRows = rows.map(r => [...r]);
-
-    dropZone.classList.add('loaded');
-    dropZone.innerHTML = `<div class="upload-icon">✅</div><div class="upload-text"><strong>${file.name}</strong></div><div class="upload-text" style="margin-top:4px; font-size:12px; color:#0F6E56;">${rows.length} rows · ${headers.length} columns loaded</div>`;
-
-    populateColumnSelects();
-    setStep(3);
-    showPanel('panel-map');
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const wb=XLSX.read(e.target.result,{type:'binary'});
+    const ws=wb.Sheets[wb.SheetNames[0]];
+    const data=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+    headers=data[0].map(String);
+    rows=data.slice(1).filter(r=>r.some(c=>c!==''));
+    outputRows=rows.map(r=>[...r]);
+    drop.classList.add('loaded');
+    drop.innerHTML=`<div class="upload-icon">✅</div><div class="upload-text"><strong>${file.name}</strong></div><div class="upload-text" style="margin-top:6px;font-size:13px;color:#6a9a2a;">${rows.length.toLocaleString()} rows · ${headers.length} columns loaded successfully</div>`;
+    populateCols();
+    setStep(2);
+    show('p2');
   };
   reader.readAsBinaryString(file);
 }
 
-function populateColumnSelects() {
-  const selects = ['col-sku', 'col-name', 'col-short', 'col-long', 'col-cat'];
-  const hLower = headers.map(h => h.toLowerCase().trim());
-
-  selects.forEach(id => {
-    const sel = document.getElementById(id);
-    while (sel.options.length > 1) sel.remove(1);
-    headers.forEach((h, i) => {
-      const opt = new Option(h || `Column ${i + 1}`, i);
-      sel.appendChild(opt);
-    });
+function populateCols() {
+  const ids=['c-sku','c-name','c-short','c-long','c-cat'];
+  const hl=headers.map(h=>h.toLowerCase().trim());
+  ids.forEach(id=>{
+    const sel=document.getElementById(id);
+    while(sel.options.length>1) sel.remove(1);
+    headers.forEach((h,i)=>sel.appendChild(new Option(h||`Column ${i+1}`,i)));
   });
-
-  autoSelect('col-name', hLower, ['product name', 'name', 'title', 'item name', 'item title']);
-  autoSelect('col-short', hLower, ['short desc', 'short description', 'brief', 'description short']);
-  autoSelect('col-long', hLower, ['long desc', 'long description', 'description', 'full description', 'product description']);
-  autoSelect('col-sku', hLower, ['sku', 'item number', 'item no', 'item #', 'part number', 'part no', 'upc', 'product id', 'item_number']);
-  autoSelect('col-cat', hLower, ['category', 'type', 'product type', 'product category', 'class', 'subcategory']);
+  auto('c-name',hl,['product name','name','title','item name','item title']);
+  auto('c-short',hl,['short desc','short description','brief','description short']);
+  auto('c-long',hl,['long desc','long description','description','product description','full description']);
+  auto('c-sku',hl,['sku','item number','item no','item #','part number','item_number','part no']);
+  auto('c-cat',hl,['category','type','product type','class','subcategory','product category']);
 }
-
-function autoSelect(id, hLower, keywords) {
-  const sel = document.getElementById(id);
-  for (const kw of keywords) {
-    const idx = hLower.findIndex(h => h.includes(kw));
-    if (idx >= 0) { sel.value = idx; return; }
+function auto(id,hl,kws) {
+  const sel=document.getElementById(id);
+  for(const kw of kws) {
+    const i=hl.findIndex(h=>h.includes(kw));
+    if(i>=0){ sel.value=i; return; }
   }
 }
+function gi(id) { const v=document.getElementById(id).value; return v!==''?parseInt(v):null; }
 
-// ── Step 3: Map → Step 4 ──────────────────────────────────────────────────────
-function goToStep4() {
-  if (document.getElementById('col-name').value === '') {
-    alert('Please map the Product Name column before continuing.');
-    return;
-  }
-  setStep(4);
-  showPanel('panel-config');
+function goStep3() {
+  if(document.getElementById('c-name').value===''){ alert('Please map the Product Name column before continuing.'); return; }
+  setStep(3); show('p3');
 }
 
-// ── Step 4: Config → Preview / Step 5 ────────────────────────────────────────
-function getColIdx(id) {
-  const v = document.getElementById(id).value;
-  return v !== '' ? parseInt(v) : null;
+// ── BUILD SYSTEM PROMPT ──────────────────────────────────────────────────────
+function buildSystem() {
+  const nameMin=document.getElementById('lim-name-min').value||40;
+  const nameMax=document.getElementById('lim-name-max').value||100;
+  const shortMin=document.getElementById('lim-short-min').value||100;
+  const shortMax=document.getElementById('lim-short-max').value||250;
+  const longMin=document.getElementById('lim-long-min').value||300;
+  const longMax=document.getElementById('lim-long-max').value||700;
+  const custom=document.getElementById('custom').value.trim();
+
+  const catRules = [
+    {id:'electrodes', label:'Electrodes & Welding Rods'},
+    {id:'wire', label:'Welding Wire & MIG Wire'},
+    {id:'abrasives', label:'Abrasives, Wire Wheels & Brushes'},
+    {id:'equipment', label:'Welding Equipment & Machines'},
+    {id:'accessories', label:'Accessories & Consumables'},
+  ].map(c=>{
+    const rule=document.getElementById('rule-'+c.id).value.trim();
+    return rule?`[${c.label}]: ${rule}`:'';
+  }).filter(Boolean).join('\n\n');
+
+  return `You are an AI content specialist for Forney Industries, rewriting product catalog data for maximum AI discoverability and LLM-powered search accuracy.
+
+CHARACTER LIMITS (strictly enforce):
+- Product name: ${nameMin}–${nameMax} characters
+- Short description: ${shortMin}–${shortMax} characters  
+- Long description: ${longMin}–${longMax} characters
+
+CATEGORY-SPECIFIC RULES (apply based on the product's category field):
+${catRules}
+
+GLOBAL RULES:
+${custom}
+
+OUTPUT FORMAT: Return ONLY a valid JSON array. No markdown. No explanation. No code fences.
+Each object must contain: "index" (integer, same as input), "name", "short_desc", "long_desc".
+Never invent specifications not present in the source data.`;
 }
 
-function buildBatch(slice, startIdx, scope) {
-  const colName = getColIdx('col-name');
-  const colShort = getColIdx('col-short');
-  const colLong = getColIdx('col-long');
-  const colSku = getColIdx('col-sku');
-  const colCat = getColIdx('col-cat');
-
-  return slice.map((row, i) => {
-    const obj = { index: i };
-    if (colSku !== null) obj.sku = String(row[colSku] || '').trim();
-    if (colCat !== null && row[colCat]) obj.category = String(row[colCat]).trim();
-    obj.name = String(row[colName] || '').trim();
-    if (scope !== 'name-only' && colShort !== null) obj.short_desc = String(row[colShort] || '').trim();
-    if (scope === 'all' && colLong !== null) obj.long_desc = String(row[colLong] || '').trim();
-    return obj;
-  });
-}
-
-const SYSTEM = `You are a product content specialist optimizing welding product data for AI discoverability and LLM-powered search.
-
-Rewrite rules:
-- Product names: Specific and descriptive. Include material, type, key spec (e.g. gauge/diameter/amperage). No filler words.
-- Short descriptions (1–2 sentences): Cover what it IS, what it's FOR, and who uses it. Include key specs inline.
-- Long descriptions (3–5 sentences): Add compatible processes, materials, use cases, and critical specs. Write for both humans and AI parsing. Plain technical English — no bullet points, no marketing fluff.
-- Never invent specifications. Only use information provided.
-- Return ONLY a valid JSON array — no markdown, no code fences, no preamble.`;
-
-function buildPrompt(batch, scope, brand, custom) {
-  const ctx = brand ? `Brand context: ${brand}\n` : '';
-  const cust = custom ? `Additional instructions: ${custom}\n` : '';
-  const fields = scope === 'name-only' ? ['"name"'] : scope === 'name-short' ? ['"name"', '"short_desc"'] : ['"name"', '"short_desc"', '"long_desc"'];
-  return `${ctx}${cust}Rewrite these product entries for AI discoverability. Return a JSON array where each object has: "index" (integer, same as input) plus ${fields.join(', ')}.
+function buildPrompt(batch, scope) {
+  const fields = scope==='name-only'?['"name"']:scope==='name-short'?['"name"','"short_desc"']:['"name"','"short_desc"','"long_desc"'];
+  return `Rewrite these Forney Industries product entries. Return a JSON array where each object has: "index" (same as input) plus ${fields.join(', ')}.
 
 Products:
-${JSON.stringify(batch, null, 2)}
+${JSON.stringify(batch,null,2)}
 
-Return ONLY a JSON array. No markdown. No explanation.`;
+Return ONLY a JSON array.`;
 }
 
 async function callClaude(batch, scope) {
-  const brand = document.getElementById('brand-context').value.trim();
-  const custom = document.getElementById('custom-prompt').value.trim();
-  const resp = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true'
+  const resp=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'x-api-key':API_KEY,
+      'anthropic-version':'2023-06-01',
+      'anthropic-dangerous-direct-browser-access':'true'
     },
-    body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 4096,
-      system: SYSTEM,
-      messages: [{ role: 'user', content: buildPrompt(batch, scope, brand, custom) }]
+    body:JSON.stringify({
+      model:MODEL,
+      max_tokens:4096,
+      system:buildSystem(),
+      messages:[{role:'user',content:buildPrompt(batch,scope)}]
     })
   });
+  if(!resp.ok){const e=await resp.json();throw new Error(e.error?.message||`HTTP ${resp.status}`);}
+  const d=await resp.json();
+  const txt=d.content?.find(b=>b.type==='text')?.text||'[]';
+  return JSON.parse(txt.replace(/^```[a-z]*\n?/i,'').replace(/```$/i,'').trim());
+}
 
-  if (!resp.ok) {
-    const err = await resp.json();
-    throw new Error(err.error?.message || `HTTP ${resp.status}`);
-  }
-
-  const data = await resp.json();
-  const text = data.content?.find(b => b.type === 'text')?.text || '[]';
-  // Strip any accidental markdown fences
-  const clean = text.replace(/^```[a-z]*\n?/i, '').replace(/```$/i, '').trim();
-  return JSON.parse(clean);
+function buildBatch(slice, scope) {
+  const cn=gi('c-name'),cs=gi('c-short'),cl=gi('c-long'),csk=gi('c-sku'),cc=gi('c-cat');
+  return slice.map((row,i)=>{
+    const o={index:i};
+    if(csk!==null) o.sku=String(row[csk]||'').trim();
+    if(cc!==null&&row[cc]) o.category=String(row[cc]).trim();
+    o.name=String(row[cn]||'').trim();
+    if(scope!=='name-only'&&cs!==null) o.short_desc=String(row[cs]||'').trim();
+    if(scope==='all'&&cl!==null) o.long_desc=String(row[cl]||'').trim();
+    return o;
+  });
 }
 
 async function runPreview() {
-  document.getElementById('panel-preview').classList.remove('hidden');
-  document.getElementById('preview-body').innerHTML = '<tr><td colspan="4" style="color:#999; padding:16px;">Calling Claude...</td></tr>';
-  const scope = document.getElementById('rewrite-scope').value;
-  const batch = buildBatch(rows.slice(0, 3), 0, scope);
-  const colSku = getColIdx('col-sku');
+  show('p-preview');
+  document.getElementById('preview-body').innerHTML='<tr><td colspan="4" style="color:#9a9690;padding:20px;">Calling Claude AI...</td></tr>';
+  const scope=document.getElementById('scope').value;
+  const colSku=gi('c-sku');
   try {
-    const results = await callClaude(batch, scope);
-    const tbody = document.getElementById('preview-body');
-    tbody.innerHTML = '';
-    results.forEach((r, i) => {
-      const original = batch[i];
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${original.sku || (i + 1)}</td><td>${original.name}</td><td class="new">${r.name || '—'}</td><td class="new">${r.short_desc || '—'}</td>`;
+    const batch=buildBatch(rows.slice(0,3),scope);
+    const res=await callClaude(batch,scope);
+    const tbody=document.getElementById('preview-body');
+    tbody.innerHTML='';
+    res.forEach((r,i)=>{
+      const orig=batch[i];
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td>${orig.sku||i+1}</td><td style="max-width:180px;">${orig.name}</td><td class="new" style="max-width:180px;">${r.name||'—'}</td><td class="new" style="max-width:220px;">${r.short_desc||'—'}</td>`;
       tbody.appendChild(tr);
     });
-  } catch (e) {
-    document.getElementById('preview-body').innerHTML = `<tr><td colspan="4" style="color:#c00; padding:16px;">Error: ${e.message}</td></tr>`;
+  } catch(e) {
+    document.getElementById('preview-body').innerHTML=`<tr><td colspan="4" style="color:var(--red);padding:20px;">Error: ${e.message}</td></tr>`;
   }
 }
 
-function goToStep5() {
-  document.getElementById('panel-preview').classList.add('hidden');
-  document.getElementById('stat-total').textContent = rows.length;
-  setStep(5);
-  showPanel('panel-run');
+function goStep4() {
+  document.getElementById('p-preview').classList.add('hidden');
+  document.getElementById('st-total').textContent=rows.length.toLocaleString();
+  setStep(4); show('p4');
 }
 
-// ── Step 5: Processing ────────────────────────────────────────────────────────
-function log(msg, type = 'info') {
-  const el = document.getElementById('log');
-  const div = document.createElement('div');
-  div.className = 'log-line log-' + type;
-  const t = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  div.textContent = `[${t}] ${msg}`;
-  el.appendChild(div);
-  el.scrollTop = el.scrollHeight;
+// ── PROCESSING ───────────────────────────────────────────────────────────────
+function addLog(msg,type='info') {
+  const el=document.getElementById('log');
+  const d=document.createElement('div');
+  d.className='log-'+type;
+  const t=new Date().toLocaleTimeString('en-US',{hour12:false});
+  d.textContent=`[${t}] ${msg}`;
+  el.appendChild(d); el.scrollTop=el.scrollHeight;
 }
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
 
 function updateStats() {
-  document.getElementById('stat-done').textContent = doneCount;
-  document.getElementById('stat-errors').textContent = errorCount;
-  document.getElementById('stat-skip').textContent = skipCount;
-  const processed = doneCount + errorCount + skipCount;
-  const pct = rows.length > 0 ? Math.round(processed / rows.length * 100) : 0;
-  document.getElementById('progress-fill').style.width = pct + '%';
-  document.getElementById('status-msg').textContent = `${processed} of ${rows.length} rows processed (${pct}%)`;
+  document.getElementById('st-done').textContent=doneCount.toLocaleString();
+  document.getElementById('st-err').textContent=errCount.toLocaleString();
+  const processed=doneCount+errCount;
+  const pct=rows.length>0?Math.round(processed/rows.length*100):0;
+  document.getElementById('prog').style.width=pct+'%';
+  document.getElementById('status-line').textContent=`${processed.toLocaleString()} of ${rows.length.toLocaleString()} rows processed (${pct}%)`;
 }
 
 async function startProcessing() {
-  if (running) return;
-  running = true; paused = false;
-  doneCount = 0; errorCount = 0; skipCount = 0;
-  outputRows = rows.map(r => [...r]);
+  if(running) return;
+  running=true; paused=false; doneCount=0; errCount=0;
+  outputRows=rows.map(r=>[...r]);
+  document.getElementById('btn-start').disabled=true;
+  document.getElementById('btn-pause').disabled=false;
+  document.getElementById('btn-dl').disabled=true;
+  document.getElementById('log').innerHTML='';
 
-  document.getElementById('btn-start').disabled = true;
-  document.getElementById('btn-pause').disabled = false;
-  document.getElementById('btn-download').disabled = true;
+  const bsz=parseInt(document.getElementById('batch-sz').value);
+  const scope=document.getElementById('scope').value;
+  const cn=gi('c-name'),cs=gi('c-short'),cl=gi('c-long');
 
-  const batchSize = parseInt(document.getElementById('batch-size').value);
-  const scope = document.getElementById('rewrite-scope').value;
-  const colName = getColIdx('col-name');
-  const colShort = getColIdx('col-short');
-  const colLong = getColIdx('col-long');
+  addLog(`Forney Forge starting: ${rows.length.toLocaleString()} rows · batch ${bsz} · scope: ${scope}`,'info');
 
-  log(`Starting: ${rows.length} rows, batch size ${batchSize}, scope: ${scope}`, 'info');
+  for(let i=0;i<rows.length;i+=bsz) {
+    while(paused) await sleep(300);
+    const slice=rows.slice(i,Math.min(i+bsz,rows.length));
+    const end=Math.min(i+bsz,rows.length);
+    document.getElementById('st-running').textContent=slice.length;
+    addLog(`Processing rows ${i+1}–${end}...`,'info');
 
-  for (let i = 0; i < rows.length; i += batchSize) {
-    // Pause check
-    while (paused) await sleep(400);
-
-    const slice = rows.slice(i, Math.min(i + batchSize, rows.length));
-    const batch = buildBatch(slice, i, scope);
-    const end = Math.min(i + batchSize, rows.length);
-
-    log(`Rows ${i + 1}–${end}…`, 'info');
-
-    let attempts = 0;
-    let success = false;
-
-    while (attempts < 3 && !success) {
+    let ok=false,attempts=0;
+    while(attempts<3&&!ok) {
       try {
-        const results = await callClaude(batch, scope);
-
-        results.forEach(r => {
-          const rowIdx = i + r.index;
-          if (r.name) outputRows[rowIdx][colName] = r.name;
-          if (r.short_desc && colShort !== null) outputRows[rowIdx][colShort] = r.short_desc;
-          if (r.long_desc && colLong !== null) outputRows[rowIdx][colLong] = r.long_desc;
+        const batch=buildBatch(slice,scope);
+        const res=await callClaude(batch,scope);
+        res.forEach(r=>{
+          const ri=i+r.index;
+          if(r.name) outputRows[ri][cn]=r.name;
+          if(r.short_desc&&cs!==null) outputRows[ri][cs]=r.short_desc;
+          if(r.long_desc&&cl!==null) outputRows[ri][cl]=r.long_desc;
         });
-
-        doneCount += slice.length;
-        log(`✓ Rows ${i + 1}–${end} complete`, 'ok');
-        success = true;
-      } catch (e) {
+        doneCount+=slice.length;
+        addLog(`✓ Rows ${i+1}–${end} complete`,'ok');
+        ok=true;
+      } catch(e) {
         attempts++;
-        if (attempts < 3) {
-          log(`⚠ Rows ${i + 1}–${end} error (attempt ${attempts}/3): ${e.message} — retrying in 3s…`, 'warn');
-          await sleep(3000);
-        } else {
-          errorCount += slice.length;
-          log(`✗ Rows ${i + 1}–${end} failed after 3 attempts: ${e.message}`, 'err');
-        }
+        if(attempts<3){ addLog(`⚠ Attempt ${attempts} failed: ${e.message} — retrying in 3s...`,'warn'); await sleep(3000); }
+        else { errCount+=slice.length; addLog(`✗ Rows ${i+1}–${end} failed after 3 attempts: ${e.message}`,'err'); }
       }
     }
-
+    document.getElementById('st-running').textContent='—';
     updateStats();
-    await sleep(200); // Small delay between batches to avoid rate limits
+    await sleep(250);
   }
 
-  running = false;
-  document.getElementById('btn-pause').disabled = true;
-  document.getElementById('btn-download').disabled = false;
-  document.getElementById('btn-start').disabled = false;
-  document.getElementById('btn-start').textContent = '↺ Re-run';
-  log(`✅ Finished! ${doneCount} rows rewritten, ${errorCount} errors.`, doneCount > 0 ? 'ok' : 'err');
+  running=false;
+  document.getElementById('btn-pause').disabled=true;
+  document.getElementById('btn-dl').disabled=false;
+  document.getElementById('btn-start').disabled=false;
+  document.getElementById('btn-start').textContent='↺ Re-Run';
+  addLog(`✅ Complete! ${doneCount.toLocaleString()} rows rewritten · ${errCount} errors.`,doneCount>0?'ok':'err');
 }
 
 function togglePause() {
-  paused = !paused;
-  document.getElementById('btn-pause').textContent = paused ? '▶ Resume' : 'Pause';
-  log(paused ? '⏸ Paused.' : '▶ Resumed.', 'info');
+  paused=!paused;
+  document.getElementById('btn-pause').textContent=paused?'▶ Resume':'⏸ Pause';
+  addLog(paused?'⏸ Processing paused.':'▶ Processing resumed.','info');
 }
 
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-
 function downloadResult() {
-  const wb = XLSX.utils.book_new();
-  const wsData = [headers, ...outputRows];
-  const ws = XLSX.utils.aoa_to_sheet(wsData);
-
-  // Auto-width columns
-  const colWidths = headers.map((h, ci) => {
-    const maxLen = Math.max(h.length, ...outputRows.map(r => String(r[ci] || '').length));
-    return { wch: Math.min(maxLen + 2, 80) };
+  const wb=XLSX.utils.book_new();
+  const ws=XLSX.utils.aoa_to_sheet([headers,...outputRows]);
+  const cw=headers.map((_,ci)=>{
+    const maxLen=Math.max(headers[ci].length,...outputRows.map(r=>String(r[ci]||'').length));
+    return {wch:Math.min(maxLen+2,80)};
   });
-  ws['!cols'] = colWidths;
-
-  XLSX.utils.book_append_sheet(wb, ws, 'Rewritten Products');
-  XLSX.writeFile(wb, 'forney_products_rewritten.xlsx');
-  log('📥 Downloaded: forney_products_rewritten.xlsx', 'ok');
+  ws['!cols']=cw;
+  XLSX.utils.book_append_sheet(wb,ws,'Forney Forge Output');
+  XLSX.writeFile(wb,'forney_forge_output.xlsx');
+  addLog('⬇ Downloaded: forney_forge_output.xlsx','ok');
 }
 </script>
 </body>
